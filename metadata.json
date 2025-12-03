@@ -1,0 +1,7 @@
+{
+  "name": "RiverRun Adventures",
+  "description": "A comprehensive booking system for park entry tickets and kayaking adventures, featuring a customer booking console and an admin dashboard for management.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
