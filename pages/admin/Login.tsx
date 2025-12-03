@@ -45,22 +45,22 @@ const Login: React.FC = () => {
           )}
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <label className="block text-sm font-bold text-slate-700 mb-1">Email</label>
             <input 
               type="email" 
               value={email}
               onChange={e => setEmail(e.target.value)}
-              className="w-full border-gray-300 border rounded-lg p-2.5 focus:ring-indigo-500 focus:border-indigo-500"
+              className="w-full border-slate-400 bg-white border rounded-lg p-2.5 text-slate-900 focus:ring-indigo-500 focus:border-indigo-500"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+            <label className="block text-sm font-bold text-slate-700 mb-1">Password</label>
             <input 
               type="password" 
               value={password}
               onChange={e => setPassword(e.target.value)}
-              className="w-full border-gray-300 border rounded-lg p-2.5 focus:ring-indigo-500 focus:border-indigo-500"
+              className="w-full border-slate-400 bg-white border rounded-lg p-2.5 text-slate-900 focus:ring-indigo-500 focus:border-indigo-500"
             />
           </div>
 

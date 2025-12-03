@@ -51,26 +51,26 @@ const Tickets: React.FC = () => {
           <h2 className="text-lg font-semibold mb-4">{currentTicket.id ? 'Edit Ticket' : 'New Ticket'}</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700">Title</label>
+              <label className="block text-sm font-bold text-slate-700 mb-1">Title</label>
               <input 
-                className="w-full border p-2 rounded" 
+                className="w-full border-slate-400 bg-white border rounded-lg p-2.5 text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" 
                 value={currentTicket.title || ''} 
                 onChange={e => setCurrentTicket({...currentTicket, title: e.target.value})} 
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Price ($)</label>
+              <label className="block text-sm font-bold text-slate-700 mb-1">Price ($)</label>
               <input 
                 type="number"
-                className="w-full border p-2 rounded" 
+                className="w-full border-slate-400 bg-white border rounded-lg p-2.5 text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" 
                 value={currentTicket.price || ''} 
                 onChange={e => setCurrentTicket({...currentTicket, price: Number(e.target.value)})} 
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Category</label>
+              <label className="block text-sm font-bold text-slate-700 mb-1">Category</label>
               <select 
-                className="w-full border p-2 rounded"
+                className="w-full border-slate-400 bg-white border rounded-lg p-2.5 text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                 value={currentTicket.category || TicketCategory.ADULT}
                 onChange={e => setCurrentTicket({...currentTicket, category: e.target.value as TicketCategory})}
               >
@@ -78,9 +78,9 @@ const Tickets: React.FC = () => {
               </select>
             </div>
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700">Description</label>
+              <label className="block text-sm font-bold text-slate-700 mb-1">Description</label>
               <textarea 
-                className="w-full border p-2 rounded" 
+                className="w-full border-slate-400 bg-white border rounded-lg p-2.5 text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" 
                 rows={3}
                 value={currentTicket.description || ''} 
                 onChange={e => setCurrentTicket({...currentTicket, description: e.target.value})} 

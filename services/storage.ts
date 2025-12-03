@@ -139,7 +139,17 @@ export const MockDB = {
   // --- SLOTS (Updated for Activities) ---
   getSlots: (): ActivitySlot[] => {
     const stored = localStorage.getItem(STORAGE_KEYS.SLOTS);
-    return stored ? JSON.parse(stored) : [];
+    if (!stored) return [];
+    
+    const slots = JSON.parse(stored);
+    
+    // Migration: ensure staffIds array exists if old data had single staffId
+    return slots.map((s: any) => {
+      if (!s.staffIds && s.staffId) {
+        return { ...s, staffIds: [s.staffId] };
+      }
+      return s;
+    });
   },
   saveSlot: (slot: ActivitySlot) => {
     const slots = MockDB.getSlots();
@@ -149,6 +159,10 @@ export const MockDB = {
     } else {
       slots.push(slot);
     }
+    localStorage.setItem(STORAGE_KEYS.SLOTS, JSON.stringify(slots));
+  },
+  deleteSlot: (id: string) => {
+    const slots = MockDB.getSlots().filter(s => s.id !== id);
     localStorage.setItem(STORAGE_KEYS.SLOTS, JSON.stringify(slots));
   },
   updateSlotBooking: (slotId: string, quantity: number) => {

@@ -63,7 +63,7 @@ export interface Ticket {
 export interface ActivitySlot {
   id: string;
   activityId: string;
-  staffId: string; // The specific staff member assigned
+  staffIds: string[]; // Changed from staffId to support multiple staff
   date: string; // YYYY-MM-DD
   startTime: string; // HH:mm
   endTime: string; // HH:mm

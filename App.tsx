@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { HashRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Layout } from './components/ui/Layout';
@@ -9,6 +8,7 @@ import Shop from './pages/customer/Shop';
 import Checkout from './pages/customer/Checkout';
 import MyBookings from './pages/customer/MyBookings';
 import CustomerLogin from './pages/customer/Login';
+import Register from './pages/customer/Register';
 
 // Admin Pages
 import AdminLogin from './pages/admin/Login';
@@ -49,6 +49,7 @@ const App: React.FC = () => {
           <Route path="/shop" element={<Shop />} />
           <Route path="/checkout" element={<Checkout />} />
           <Route path="/login" element={<CustomerLogin />} />
+          <Route path="/register" element={<Register />} />
           
           {/* Protected Customer Routes */}
           <Route path="/my-bookings" element={

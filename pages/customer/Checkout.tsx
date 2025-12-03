@@ -7,7 +7,7 @@ import { PaymentService, CardDetails } from '../../services/payment';
 import { CartItem, Booking } from '../../types';
 import { Button } from '../../components/ui/Button';
 import { CheckCircle, Lock, CreditCard, AlertCircle } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 const Checkout: React.FC = () => {
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -15,6 +15,7 @@ const Checkout: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [customerDetails, setCustomerDetails] = useState({ name: '', email: '' });
   const [generatedBooking, setGeneratedBooking] = useState<Booking | null>(null);
+  const navigate = useNavigate();
   
   // Payment State
   const [cardDetails, setCardDetails] = useState<CardDetails>({
@@ -30,18 +31,22 @@ const Checkout: React.FC = () => {
   const currentUser = AuthService.getCurrentUser();
 
   useEffect(() => {
+    // Enforce Login
+    if (!currentUser) {
+      navigate('/login');
+      return;
+    }
+
     const storedCart = sessionStorage.getItem('cart');
     if (storedCart) setCart(JSON.parse(storedCart));
 
     // Auto-fill if user is logged in
-    if (currentUser) {
-      setCustomerDetails({
-        name: currentUser.name,
-        email: currentUser.email
-      });
-      setCardDetails(prev => ({ ...prev, name: currentUser.name }));
-    }
-  }, []);
+    setCustomerDetails({
+      name: currentUser.name,
+      email: currentUser.email
+    });
+    setCardDetails(prev => ({ ...prev, name: currentUser.name }));
+  }, [currentUser, navigate]);
 
   const total = cart.reduce((sum, item) => sum + item.price, 0);
 
@@ -103,6 +108,8 @@ const Checkout: React.FC = () => {
     setCart([]);
   };
 
+  if (!currentUser) return null; // Prevent render while redirecting
+
   if (cart.length === 0 && step !== 'SUCCESS') {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center p-8 text-center">
@@ -119,26 +126,21 @@ const Checkout: React.FC = () => {
       {step === 'REVIEW' && (
         <div className="space-y-8 animate-fade-in">
           <h1 className="text-3xl font-bold text-slate-900">Checkout</h1>
-          <div className="bg-white p-6 rounded-xl border shadow-sm">
-            <h2 className="text-xl font-semibold mb-4">Order Summary</h2>
+          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+            <h2 className="text-xl font-semibold mb-4 text-slate-800">Order Summary</h2>
             {cart.map((item, idx) => (
               <div key={idx} className="flex justify-between py-3 border-b border-gray-100 last:border-0">
                 <span>{item.title} {item.subtitle && <span className="text-gray-500 text-sm">({item.subtitle})</span>}</span>
-                <span className="font-medium">${item.price}</span>
+                <span className="font-medium text-slate-900">${item.price}</span>
               </div>
             ))}
-            <div className="flex justify-between pt-4 mt-2 text-lg font-bold">
+            <div className="flex justify-between pt-4 mt-2 text-lg font-bold text-slate-900">
               <span>Total</span>
               <span>${total}</span>
             </div>
           </div>
           
           <div className="flex justify-end space-x-4 items-center">
-            {!currentUser && (
-               <span className="text-sm text-gray-500">
-                 Already have an account? <Link to="/login" className="text-indigo-600 hover:underline">Log in</Link>
-               </span>
-            )}
             <Button onClick={() => setStep('PAYMENT')}>
               Continue to Payment
             </Button>
@@ -159,26 +161,26 @@ const Checkout: React.FC = () => {
           </div>
 
           <form onSubmit={handlePayment} className="space-y-6">
-            <div className="bg-white p-6 rounded-xl border shadow-sm space-y-4">
+            <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm space-y-4">
               <h2 className="text-xl font-semibold text-gray-800">Billing Information</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Full Name</label>
+                  <label className="block text-sm font-bold text-slate-700 mb-1">Full Name</label>
                   <input 
                     required
                     type="text" 
-                    className="mt-1 block w-full rounded-md border-gray-300 border p-2.5 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                    className="mt-1 block w-full rounded-md border-slate-400 bg-white border p-2.5 text-slate-900 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                     value={customerDetails.name}
                     onChange={e => setCustomerDetails({...customerDetails, name: e.target.value})}
                     placeholder="John Doe"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Email Address</label>
+                  <label className="block text-sm font-bold text-slate-700 mb-1">Email Address</label>
                   <input 
                     required
                     type="email" 
-                    className="mt-1 block w-full rounded-md border-gray-300 border p-2.5 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                    className="mt-1 block w-full rounded-md border-slate-400 bg-white border p-2.5 text-slate-900 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                     value={customerDetails.email}
                     onChange={e => setCustomerDetails({...customerDetails, email: e.target.value})}
                     placeholder="john@example.com"
@@ -187,7 +189,7 @@ const Checkout: React.FC = () => {
               </div>
             </div>
 
-            <div className="bg-white p-6 rounded-xl border shadow-sm space-y-6">
+            <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm space-y-6">
               <div className="flex justify-between items-center">
                  <h2 className="text-xl font-semibold text-gray-800">Card Details</h2>
                  <div className="flex gap-2">
@@ -205,7 +207,7 @@ const Checkout: React.FC = () => {
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Card Number</label>
+                  <label className="block text-sm font-bold text-slate-700 mb-1">Card Number</label>
                   <div className="relative mt-1">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                       <CreditCard className="h-5 w-5 text-gray-400" />
@@ -214,7 +216,7 @@ const Checkout: React.FC = () => {
                       required
                       type="text" 
                       placeholder="0000 0000 0000 0000" 
-                      className="block w-full pl-10 rounded-md border-gray-300 border p-2.5 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 font-mono"
+                      className="block w-full pl-10 rounded-md border-slate-400 bg-white border p-2.5 text-slate-900 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 font-mono"
                       value={cardDetails.number}
                       onChange={handleCardNumberChange}
                       maxLength={19}
@@ -224,25 +226,25 @@ const Checkout: React.FC = () => {
 
                 <div className="grid grid-cols-2 gap-4">
                    <div>
-                    <label className="block text-sm font-medium text-gray-700">Expiration Date</label>
+                    <label className="block text-sm font-bold text-slate-700 mb-1">Expiration Date</label>
                     <input 
                       required
                       type="text" 
                       placeholder="MM/YY" 
-                      className="mt-1 block w-full rounded-md border-gray-300 border p-2.5 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-center"
+                      className="mt-1 block w-full rounded-md border-slate-400 bg-white border p-2.5 text-slate-900 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-center"
                       value={cardDetails.expiry}
                       onChange={handleExpiryChange}
                       maxLength={5}
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">CVC</label>
+                    <label className="block text-sm font-bold text-slate-700 mb-1">CVC</label>
                     <div className="relative mt-1">
                       <input 
                         required
                         type="password" 
                         placeholder="123" 
-                        className="block w-full rounded-md border-gray-300 border p-2.5 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-center"
+                        className="block w-full rounded-md border-slate-400 bg-white border p-2.5 text-slate-900 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-center"
                         value={cardDetails.cvc}
                         onChange={handleCVCChange}
                         maxLength={4}
@@ -255,23 +257,23 @@ const Checkout: React.FC = () => {
                 </div>
 
                 <div>
-                   <label className="block text-sm font-medium text-gray-700">Name on Card</label>
+                   <label className="block text-sm font-bold text-slate-700 mb-1">Name on Card</label>
                    <input 
                       required
                       type="text" 
                       placeholder="J S DOE"
-                      className="mt-1 block w-full rounded-md border-gray-300 border p-2.5 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 uppercase"
+                      className="mt-1 block w-full rounded-md border-slate-400 bg-white border p-2.5 text-slate-900 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 uppercase"
                       value={cardDetails.name}
                       onChange={e => setCardDetails({...cardDetails, name: e.target.value.toUpperCase()})}
                    />
                 </div>
                  <div>
-                   <label className="block text-sm font-medium text-gray-700">Zip Code</label>
+                   <label className="block text-sm font-bold text-slate-700 mb-1">Zip Code</label>
                    <input 
                       required
                       type="text" 
                       placeholder="12345"
-                      className="mt-1 block w-full rounded-md border-gray-300 border p-2.5 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                      className="mt-1 block w-full rounded-md border-slate-400 bg-white border p-2.5 text-slate-900 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                       value={cardDetails.zip}
                       onChange={e => setCardDetails({...cardDetails, zip: e.target.value})}
                       maxLength={10}

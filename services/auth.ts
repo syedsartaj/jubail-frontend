@@ -15,6 +15,30 @@ export const AuthService = {
     }
     return null;
   },
+
+  register: async (name: string, email: string, password: string): Promise<User | null> => {
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    const existingUser = MockDB.findUserByEmail(email);
+    if (existingUser) {
+      return null; // Email already taken
+    }
+
+    const newUser: User = {
+      id: `user_${Date.now()}`,
+      name,
+      email,
+      passwordHash: password,
+      role: UserRole.CUSTOMER
+    };
+
+    MockDB.saveUser(newUser);
+    
+    // Auto login after register
+    const safeUser = { ...newUser, passwordHash: undefined };
+    localStorage.setItem('riverrun_auth', JSON.stringify(safeUser));
+    return safeUser;
+  },
   
   logout: () => {
     localStorage.removeItem('riverrun_auth');
