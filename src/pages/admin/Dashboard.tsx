@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { MockDB } from '../../services/storage';
 import { Booking, Staff, BookingType, User } from '../../types';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import * as XLSX from 'xlsx';
+import * as XLSX from 'xlsx/xlsx.mjs';
 import { DollarSign, Users, Ticket, Activity, Download, Filter } from 'lucide-react';
 import { ApiService } from '../../services/api';
 
