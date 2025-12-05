@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthService } from '../../services/auth';
@@ -19,10 +20,16 @@ const Login: React.FC = () => {
     const user = await AuthService.login(email, password);
     setLoading(false);
     
-    if (user && user.role === 'ADMIN') {
-      navigate('/admin');
+    if (user) {
+      if (user.role === 'ADMIN') {
+        navigate('/admin');
+      } else if (user.role === 'STAFF') {
+        navigate('/staff/pos');
+      } else {
+        setError('Unauthorized access. Please use Customer Login.');
+      }
     } else {
-      setError('Invalid credentials or unauthorized access');
+      setError('Invalid credentials.');
     }
   };
 
@@ -33,8 +40,8 @@ const Login: React.FC = () => {
           <div className="bg-indigo-100 p-3 rounded-full text-indigo-600 mb-4">
             <Anchor size={32} />
           </div>
-          <h2 className="text-2xl font-bold text-slate-900">Admin Portal</h2>
-          <p className="text-gray-500">Sign in to manage RiverRun</p>
+          <h2 className="text-2xl font-bold text-slate-900">Staff Portal</h2>
+          <p className="text-gray-500">Sign in to manage bookings</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -68,8 +75,9 @@ const Login: React.FC = () => {
             Sign In
           </Button>
 
-          <div className="text-center text-xs text-gray-400 mt-4">
-            Default: admin@riverrun.com / secret
+          <div className="text-center text-xs text-gray-400 mt-4 space-y-1">
+            <p>Admin: admin@riverrun.com / secret</p>
+            <p>Staff: staff@riverrun.com / secret</p>
           </div>
         </form>
       </div>

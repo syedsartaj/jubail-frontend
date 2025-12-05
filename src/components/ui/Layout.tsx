@@ -16,20 +16,26 @@ import {
   Home,
   Users,
   Tent,
-  User as UserIcon
+  Settings,
+  User as UserIcon,
+  Tag,
+  Monitor,
+  BarChart3,
+  Layers
 } from 'lucide-react';
 
 export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const isAdmin = location.pathname.startsWith('/admin');
+  const isStaff = location.pathname.startsWith('/staff');
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
   
   const user = AuthService.getCurrentUser();
 
   const handleLogout = () => {
     AuthService.logout();
-    navigate(isAdmin ? '/admin/login' : '/');
+    navigate(isAdmin || isStaff ? '/admin/login' : '/');
   };
 
   if (isAdmin && location.pathname === '/admin/login') {
@@ -40,16 +46,30 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     return <>{children}</>;
   }
 
-  // ADMIN LAYOUT
-  if (isAdmin) {
-    const navItems = [
-      { icon: <LayoutDashboard size={20} />, label: 'Dashboard', path: '/admin' },
-      { icon: <Ticket size={20} />, label: 'Tickets', path: '/admin/tickets' },
-      { icon: <Users size={20} />, label: 'Staff & Hours', path: '/admin/staff' },
-      { icon: <Tent size={20} />, label: 'Activities', path: '/admin/activities' },
-      { icon: <CalendarDays size={20} />, label: 'Schedule', path: '/admin/slots' },
-      { icon: <QrCode size={20} />, label: 'Scanner', path: '/admin/scan' },
-    ];
+  // ADMIN & STAFF LAYOUT (Shared Sidebar Structure)
+  if (isAdmin || isStaff) {
+    let navItems: any[] = [];
+    
+    if (user?.role === 'ADMIN') {
+      navItems = [
+        { icon: <LayoutDashboard size={20} />, label: 'Dashboard', path: '/admin' },
+        { icon: <BarChart3 size={20} />, label: 'Sales Reports', path: '/admin/reports' },
+        { icon: <Monitor size={20} />, label: 'Staff Console (POS)', path: '/staff/pos' },
+        { icon: <Layers size={20} />, label: 'Categories', path: '/admin/categories' },
+        { icon: <Tent size={20} />, label: 'Activities', path: '/admin/activities' },
+        { icon: <CalendarDays size={20} />, label: 'Schedule', path: '/admin/slots' },
+        { icon: <Ticket size={20} />, label: 'Tickets', path: '/admin/tickets' },
+        { icon: <Users size={20} />, label: 'Staff & Hours', path: '/admin/staff' },
+        { icon: <Tag size={20} />, label: 'Coupons', path: '/admin/coupons' },
+        { icon: <QrCode size={20} />, label: 'Scanner', path: '/admin/scan' },
+        { icon: <Settings size={20} />, label: 'Settings', path: '/admin/settings' },
+      ];
+    } else if (user?.role === 'STAFF') {
+      navItems = [
+        { icon: <Monitor size={20} />, label: 'Bookings (POS)', path: '/staff/pos' },
+        { icon: <QrCode size={20} />, label: 'Ticket Scanner', path: '/admin/scan' }, // Reuse scanner page for staff
+      ];
+    }
 
     return (
       <div className="flex h-screen bg-gray-100">
@@ -66,13 +86,13 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
           <div className="flex items-center justify-between p-6 border-b border-slate-800">
             <div className="flex items-center space-x-2 font-bold text-xl">
               <Anchor className="text-teal-400" />
-              <span>Admin</span>
+              <span>{user?.role === 'ADMIN' ? 'Admin Panel' : 'Staff Portal'}</span>
             </div>
             <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-gray-400 hover:text-white">
               <X size={24} />
             </button>
           </div>
-          <nav className="p-4 space-y-2">
+          <nav className="p-4 space-y-2 h-[calc(100%-140px)] overflow-y-auto no-scrollbar">
             {navItems.map((item) => (
               <Link
                 key={item.path}
@@ -89,7 +109,10 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
               </Link>
             ))}
           </nav>
-          <div className="absolute bottom-0 w-full p-4 border-t border-slate-800">
+          <div className="absolute bottom-0 w-full p-4 border-t border-slate-800 bg-slate-900">
+            <div className="px-4 py-2 text-xs text-slate-500 uppercase tracking-widest mb-2">
+              Signed in as {user?.name}
+            </div>
             <button 
               onClick={handleLogout}
               className="flex items-center space-x-3 px-4 py-3 w-full text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
@@ -106,7 +129,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
             <button onClick={() => setSidebarOpen(true)} className="text-gray-600">
               <Menu size={24} />
             </button>
-            <span className="font-semibold text-gray-800">Admin Dashboard</span>
+            <span className="font-semibold text-gray-800">{user?.role === 'ADMIN' ? 'Admin Dashboard' : 'Staff Console'}</span>
             <div className="w-6" /> {/* Spacer */}
           </header>
           <main className="flex-1 overflow-auto p-4 lg:p-8">
@@ -139,7 +162,6 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
             <div className="flex items-center space-x-6">
               <Link to="/checkout" className="text-gray-500 hover:text-indigo-600 relative">
                 <ShoppingBag size={24} />
-                {/* Optional: Add badge if cart has items */}
               </Link>
 
               {user ? (
@@ -161,7 +183,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                     Log in
                   </Link>
                   <Link to="/admin/login" className="text-gray-400 hover:text-gray-600 text-sm">
-                    Admin
+                    Admin/Staff
                   </Link>
                 </div>
               )}

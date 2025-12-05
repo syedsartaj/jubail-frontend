@@ -3,40 +3,67 @@ import { MockDB } from '../../services/storage';
 import { Ticket, TicketCategory } from '../../types';
 import { Button } from '../../components/ui/Button';
 import { Trash2, Edit2, Plus } from 'lucide-react';
+import { ApiService } from '../../services/api';
+
 
 const Tickets: React.FC = () => {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [isEditing, setIsEditing] = useState(false);
-  const [currentTicket, setCurrentTicket] = useState<Partial<Ticket>>({});
+const [currentTicket, setCurrentTicket] = useState<Partial<Ticket> & { _id?: string }>({});
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    setTickets(MockDB.getTickets());
-  }, []);
-
-  const handleSave = () => {
-    if (!currentTicket.title || !currentTicket.price) return;
-    
-    const newTicket = {
-      id: currentTicket.id || Date.now().toString(),
-      title: currentTicket.title,
-      description: currentTicket.description || '',
-      price: Number(currentTicket.price),
-      category: currentTicket.category || TicketCategory.ADULT
-    } as Ticket;
-
-    MockDB.saveTicket(newTicket);
-    setTickets(MockDB.getTickets());
-    setIsEditing(false);
-    setCurrentTicket({});
-  };
-
-  const handleDelete = (id: string) => {
-    if(window.confirm('Delete this ticket type?')) {
-        MockDB.deleteTicket(id);
-        setTickets(MockDB.getTickets());
+  // ✅ Load tickets from MongoDB
+  const loadTickets = async () => {
+    try {
+      const data = await ApiService.getTickets();
+      setTickets(data);
+    } catch (err) {
+      console.error(err);
+      alert('Failed to load tickets');
     }
   };
 
+  useEffect(() => {
+    loadTickets();
+  }, []);
+
+  // ✅ Save ticket (new or edit) to MongoDB
+  const handleSave = async () => {
+    if (!currentTicket.title || !currentTicket.price) return;
+
+    try {
+      setLoading(true);
+      await ApiService.saveTicket({
+        _id: currentTicket._id, // include _id for edit
+        title: currentTicket.title,
+        description: currentTicket.description || '',
+        price: Number(currentTicket.price),
+        category: currentTicket.category || TicketCategory.ADULT,
+      });
+      setIsEditing(false);
+      setCurrentTicket({});
+      await loadTickets();
+    } catch (err) {
+      console.error(err);
+      alert('Failed to save ticket');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ✅ Delete ticket from MongoDB
+  const handleDelete = async (id: string) => {
+    if (!window.confirm('Delete this ticket type?')) return;
+
+    try {
+      await ApiService.deleteTicket(id);
+      await loadTickets();
+    } catch (err) {
+      console.error(err);
+      alert('Failed to delete ticket');
+    }
+  };
+  
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">

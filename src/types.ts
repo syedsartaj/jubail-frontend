@@ -1,7 +1,7 @@
-
 export enum UserRole {
   ADMIN = 'ADMIN',
-  CUSTOMER = 'CUSTOMER'
+  CUSTOMER = 'CUSTOMER',
+  STAFF = 'STAFF'
 }
 
 export enum BookingType {
@@ -13,6 +13,38 @@ export enum TicketCategory {
   ADULT = 'ADULT',
   CHILD = 'CHILD',
   VIP = 'VIP'
+}
+
+export enum DiscountType {
+  PERCENT = 'PERCENT',
+  FIXED = 'FIXED'
+}
+
+export enum RecurrencePattern {
+  DAILY = 'DAILY',
+  WEEKDAYS = 'WEEKDAYS',
+  WEEKENDS = 'WEEKENDS',
+  CUSTOM = 'CUSTOM'
+}
+
+// Global Settings
+export interface SystemSettings {
+  taxPercentage: number;
+}
+
+export interface ActivityCategory {
+  _id?: string;
+  id?: string;
+  name: string;
+  description?: string;
+}
+
+export interface Coupon {
+  id: string;
+  code: string;
+  type: DiscountType;
+  value: number; // e.g., 10 for 10% or 10$
+  isActive: boolean;
 }
 
 // Staff & Scheduling Types
@@ -27,14 +59,17 @@ export interface WeeklySchedule {
 }
 
 export interface Staff {
-  id: string;
+  _id?: string;        // <-- Add this
+  id?: string;         // optional if you still want
   name: string;
   role: string; // e.g., "Senior Guide", "Instructor"
   schedule: WeeklySchedule;
 }
 
 export interface Activity {
-  id: string;
+  _id?: string;        // <-- Add this
+  id?: string;
+  categoryId: string; // Linked to ActivityCategory
   title: string;
   description: string;
   price: number;
@@ -60,16 +95,34 @@ export interface Ticket {
   category: TicketCategory;
 }
 
-export interface ActivitySlot {
-  id: string;
+// --- OPTIMIZED SCHEDULE LOGIC ---
+export interface ScheduleRule {
+  id?: string;
+  _id?: string;
   activityId: string;
-  staffIds: string[]; // Changed from staffId to support multiple staff
+  staffIds: string[]; // Staff assigned to this rule
+  startDate: string; // ISO Date YYYY-MM-DD
+  endDate: string;   // ISO Date YYYY-MM-DD
+  startTime: string; // "09:00"
+  endTime: string;   // "17:00"
+  pattern: RecurrencePattern;
+  customDays?: string[]; // For CUSTOM pattern (['Monday', 'Wednesday'])
+  price: number;
+  capacity: number;
+}
+
+export interface ActivitySlot {
+  _id?: string;
+  id?: string;
+  activityId: string;
+  staffIds: string[]; 
   date: string; // YYYY-MM-DD
   startTime: string; // HH:mm
   endTime: string; // HH:mm
   price: number;
   capacity: number;
   bookedCount: number;
+  isGenerated?: boolean; // Flag to identify rule-based slots vs manual
 }
 
 export interface CartItem {
@@ -84,13 +137,24 @@ export interface CartItem {
 }
 
 export interface Booking {
-  id: string;
+  id?: string;
+  _id?: string;
   userId: string;
   customerName: string;
   customerEmail: string;
   items: CartItem[];
+  subtotal: number;
+  discountAmount?: number;
+  couponCode?: string;
+  taxAmount: number;
   totalAmount: number;
   status: 'PAID' | 'PENDING' | 'CANCELLED';
+  
+  // New Fields for POS & Reporting
+  paymentMethod?: 'CARD' | 'CASH' | 'ONLINE'; 
+  manualTxnId?: string; // For POS Online payments
+  createdByStaffId?: string; // To track which staff made the sale
+  createdByStaffEmail?: string;
   scanned: boolean;
   createdAt: string;
   qrCodeData: string;

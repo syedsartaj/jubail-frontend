@@ -18,6 +18,13 @@ import AdminSlots from './pages/admin/Slots';
 import AdminScanner from './pages/admin/Scanner';
 import AdminStaff from './pages/admin/Staff';
 import AdminActivities from './pages/admin/Activities';
+import AdminSettings from './pages/admin/Settings';
+import AdminCoupons from './pages/admin/Coupons';
+import AdminReports from './pages/admin/Reports';
+import AdminCategories from './pages/admin/Categories';
+
+// Staff Pages
+import StaffPOS from './pages/staff/POS';
 
 import { AuthService } from './services/auth';
 
@@ -28,6 +35,15 @@ const PrivateAdminRoute = ({ children }: { children: React.ReactElement }) => {
   }
   return children;
 };
+
+const PrivateStaffRoute = ({ children }: { children: React.ReactElement }) => {
+  const user = AuthService.getCurrentUser();
+  if (!user || (user.role !== 'STAFF' && user.role !== 'ADMIN')) {
+    return <Navigate to="/admin/login" replace />;
+  }
+  return children;
+};
+
 
 const PrivateCustomerRoute = ({ children }: { children: React.ReactElement }) => {
   const user = AuthService.getCurrentUser();
@@ -81,6 +97,11 @@ const App: React.FC = () => {
               <AdminScanner />
             </PrivateAdminRoute>
           } />
+          <Route path="/admin/settings" element={
+            <PrivateAdminRoute>
+              <AdminSettings />
+            </PrivateAdminRoute>
+          } />
           <Route path="/admin/staff" element={
             <PrivateAdminRoute>
               <AdminStaff />
@@ -90,6 +111,34 @@ const App: React.FC = () => {
             <PrivateAdminRoute>
               <AdminActivities />
             </PrivateAdminRoute>
+          } />
+                    <Route path="/admin/settings" element={
+            <PrivateAdminRoute>
+              <AdminSettings />
+            </PrivateAdminRoute>
+          } />
+          <Route path="/admin/categories" element={
+            <PrivateAdminRoute>
+              <AdminCategories />
+            </PrivateAdminRoute>
+          } />
+          <Route path="/admin/coupons" element={
+            <PrivateAdminRoute>
+              <AdminCoupons />
+            </PrivateAdminRoute>
+          } />
+
+                    <Route path="/admin/reports" element={
+            <PrivateAdminRoute>
+              <AdminReports />
+            </PrivateAdminRoute>
+          } />
+
+          {/* Staff Routes */}
+          <Route path="/staff/pos" element={
+            <PrivateStaffRoute>
+              <StaffPOS />
+            </PrivateStaffRoute>
           } />
         </Routes>
       </Layout>

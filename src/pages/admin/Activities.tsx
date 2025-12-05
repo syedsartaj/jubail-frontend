@@ -1,8 +1,10 @@
+
 import React, { useEffect, useState } from 'react';
 import { MockDB } from '../../services/storage';
-import { Activity, Staff } from '../../types';
+import { Activity, Staff, ActivityCategory } from '../../types';
 import { Button } from '../../components/ui/Button';
-import { Plus, Edit2, Trash2, Users } from 'lucide-react';
+import { Plus, Edit2, Trash2, Users, Folder } from 'lucide-react';
+import { ApiService } from '../../services/api';
 
 const COLORS = [
   'bg-teal-100 text-teal-800',
@@ -16,19 +18,74 @@ const COLORS = [
 const ActivitiesPage: React.FC = () => {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [staffList, setStaffList] = useState<Staff[]>([]);
+  const [categories, setCategories] = useState<ActivityCategory[]>([]);
   const [isEditing, setIsEditing] = useState(false);
   const [currentActivity, setCurrentActivity] = useState<Partial<Activity>>({});
 
+  // useEffect(() => {
+  //   setActivities(MockDB.getActivities());
+  //   setStaffList(MockDB.getStaff());
+  //   setCategories(MockDB.getCategories());
+  // }, []);
+
+    // ✅ LOAD FROM BACKEND
   useEffect(() => {
-    setActivities(MockDB.getActivities());
-    setStaffList(MockDB.getStaff());
+    loadAll();
   }, []);
 
-  const handleSave = () => {
-    if (!currentActivity.title || !currentActivity.price) return;
+  const loadAll = async () => {
+    const [acts, staff, cats] = await Promise.all([
+      ApiService.getActivities(),
+      ApiService.getStaff(),
+      ApiService.getCategories(),
+    ]);
+
+    setActivities(acts);
+    setStaffList(staff);
+    setCategories(cats);
+  };
+
+
+  // const handleSave = () => {
+  //   if (!currentActivity.title || !currentActivity.price || !currentActivity.categoryId) {
+  //       alert("Please fill all required fields including Category.");
+  //       return;
+  //   }
+
+  //   const newActivity: Activity = {
+  //     id: currentActivity.id || `act_${Date.now()}`,
+  //     categoryId: currentActivity.categoryId,
+  //     title: currentActivity.title,
+  //     description: currentActivity.description || '',
+  //     price: Number(currentActivity.price),
+  //     durationMinutes: Number(currentActivity.durationMinutes) || 60,
+  //     capacityPerSlot: Number(currentActivity.capacityPerSlot) || 1,
+  //     color: currentActivity.color || COLORS[0],
+  //     assignedStaffIds: currentActivity.assignedStaffIds || []
+  //   };
+
+  //   MockDB.saveActivity(newActivity);
+  //   setActivities(MockDB.getActivities());
+  //   setIsEditing(false);
+  //   setCurrentActivity({});
+  // };
+
+  // const handleDelete = (id: string) => {
+  //   if (confirm('Delete this activity type?')) {
+  //     MockDB.deleteActivity(id);
+  //     setActivities(MockDB.getActivities());
+  //   }
+  // };
+  // ✅ SAVE TO BACKEND
+  const handleSave = async () => {
+    if (!currentActivity.title || !currentActivity.price || !currentActivity.categoryId) {
+      alert("Please fill all required fields including Category.");
+      return;
+    }
 
     const newActivity: Activity = {
-      id: currentActivity.id || `act_${Date.now()}`,
+      id: currentActivity.id || '',
+      categoryId: currentActivity.categoryId,
       title: currentActivity.title,
       description: currentActivity.description || '',
       price: Number(currentActivity.price),
@@ -38,16 +95,18 @@ const ActivitiesPage: React.FC = () => {
       assignedStaffIds: currentActivity.assignedStaffIds || []
     };
 
-    MockDB.saveActivity(newActivity);
-    setActivities(MockDB.getActivities());
+    await ApiService.saveActivity(newActivity);
+    await loadAll();
+
     setIsEditing(false);
     setCurrentActivity({});
   };
 
-  const handleDelete = (id: string) => {
+  // ✅ DELETE FROM BACKEND
+  const handleDelete = async (id: string) => {
     if (confirm('Delete this activity type?')) {
-      MockDB.deleteActivity(id);
-      setActivities(MockDB.getActivities());
+      await ApiService.deleteActivity(id);
+      await loadAll();
     }
   };
 
@@ -59,6 +118,12 @@ const ActivitiesPage: React.FC = () => {
       setCurrentActivity({ ...currentActivity, assignedStaffIds: [...current, staffId] });
     }
   };
+
+  const getCategoryName = (id: string) => {
+      const cat = categories.find(c => c.id === id);
+      return cat ? cat.name : 'Uncategorized';
+  };
+
 
   return (
     <div className="space-y-6">
@@ -75,18 +140,31 @@ const ActivitiesPage: React.FC = () => {
            
            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
              <div>
-               <label className="block text-sm font-bold text-slate-700 mb-1">Activity Title</label>
+               <label className="block text-sm font-bold text-slate-700 mb-1">Category <span className="text-red-500">*</span></label>
+               <select 
+                 className="w-full border-slate-400 bg-white border rounded-lg p-2.5 text-slate-900 focus:ring-2 focus:ring-indigo-500"
+                 value={currentActivity.categoryId || ''}
+                 onChange={e => setCurrentActivity({...currentActivity, categoryId: e.target.value})}
+               >
+                 <option value="">Select Category...</option>
+                 {categories.map(cat => (
+                     <option key={cat.id} value={cat.id}>{cat.name}</option>
+                 ))}
+               </select>
+             </div>
+             <div>
+               <label className="block text-sm font-bold text-slate-700 mb-1">Activity Title <span className="text-red-500">*</span></label>
                <input 
-                 className="w-full border-slate-400 bg-white border rounded-lg p-2.5 text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" 
+                 className="w-full border-slate-400 bg-white border rounded-lg p-2.5 text-slate-900 focus:ring-2 focus:ring-indigo-500" 
                  value={currentActivity.title || ''} 
                  onChange={e => setCurrentActivity({...currentActivity, title: e.target.value})}
                />
              </div>
              <div>
-               <label className="block text-sm font-bold text-slate-700 mb-1">Price ($)</label>
+               <label className="block text-sm font-bold text-slate-700 mb-1">Price ($) <span className="text-red-500">*</span></label>
                <input 
                  type="number"
-                 className="w-full border-slate-400 bg-white border rounded-lg p-2.5 text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" 
+                 className="w-full border-slate-400 bg-white border rounded-lg p-2.5 text-slate-900 focus:ring-2 focus:ring-indigo-500" 
                  value={currentActivity.price || ''} 
                  onChange={e => setCurrentActivity({...currentActivity, price: Number(e.target.value)})}
                />
@@ -95,7 +173,7 @@ const ActivitiesPage: React.FC = () => {
                <label className="block text-sm font-bold text-slate-700 mb-1">Duration (Minutes)</label>
                <input 
                  type="number"
-                 className="w-full border-slate-400 bg-white border rounded-lg p-2.5 text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" 
+                 className="w-full border-slate-400 bg-white border rounded-lg p-2.5 text-slate-900 focus:ring-2 focus:ring-indigo-500" 
                  value={currentActivity.durationMinutes || ''} 
                  onChange={e => setCurrentActivity({...currentActivity, durationMinutes: Number(e.target.value)})}
                />
@@ -104,7 +182,7 @@ const ActivitiesPage: React.FC = () => {
                <label className="block text-sm font-bold text-slate-700 mb-1">Max Capacity (per slot)</label>
                <input 
                  type="number"
-                 className="w-full border-slate-400 bg-white border rounded-lg p-2.5 text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" 
+                 className="w-full border-slate-400 bg-white border rounded-lg p-2.5 text-slate-900 focus:ring-2 focus:ring-indigo-500" 
                  value={currentActivity.capacityPerSlot || ''} 
                  onChange={e => setCurrentActivity({...currentActivity, capacityPerSlot: Number(e.target.value)})}
                />
@@ -112,7 +190,7 @@ const ActivitiesPage: React.FC = () => {
              <div className="md:col-span-2">
                <label className="block text-sm font-bold text-slate-700 mb-1">Description</label>
                <textarea 
-                 className="w-full border-slate-400 bg-white border rounded-lg p-2.5 text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" 
+                 className="w-full border-slate-400 bg-white border rounded-lg p-2.5 text-slate-900 focus:ring-2 focus:ring-indigo-500" 
                  rows={3}
                  value={currentActivity.description || ''} 
                  onChange={e => setCurrentActivity({...currentActivity, description: e.target.value})}
@@ -173,6 +251,12 @@ const ActivitiesPage: React.FC = () => {
                </div>
              </div>
              
+             <div className="mb-2">
+                 <span className="text-xs font-bold text-slate-500 flex items-center gap-1">
+                     <Folder size={12}/> {getCategoryName(activity.categoryId)}
+                 </span>
+             </div>
+
              <h3 className="text-xl font-bold text-gray-900 mb-2">{activity.title}</h3>
              <p className="text-gray-500 text-sm mb-4 line-clamp-2">{activity.description}</p>
              

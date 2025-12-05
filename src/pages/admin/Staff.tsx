@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { MockDB } from '../../services/storage';
 import { Staff, WeeklySchedule, Activity } from '../../types';
 import { Button } from '../../components/ui/Button';
 import { Plus, Edit2, Trash2, Clock, User, CheckSquare, Square } from 'lucide-react';
@@ -20,22 +19,33 @@ const StaffPage: React.FC = () => {
   const [staffList, setStaffList] = useState<Staff[]>([]);
   const [allActivities, setAllActivities] = useState<Activity[]>([]);
   const [isEditing, setIsEditing] = useState(false);
-  const [currentStaff, setCurrentStaff] = useState<Partial<Staff>>({});
-  
-  // Local state for handling activity toggles during edit
+  const [currentStaff, setCurrentStaff] = useState<Partial<Staff> & { _id?: string }>({});
   const [selectedActivityIds, setSelectedActivityIds] = useState<string[]>([]);
 
+  // Fetch staff & activities
+  const fetchData = async () => {
+    try {
+      const staffRes = await fetch('http://localhost:5000/api/staff');
+      const activityRes = await fetch('http://localhost:5000/api/activities');
+      const staffData = await staffRes.json();
+      const activityData = await activityRes.json();
+      setStaffList(staffData);
+      setAllActivities(activityData);
+    } catch (err) {
+      console.error(err);
+      alert('Error fetching data.');
+    }
+  };
+
   useEffect(() => {
-    setStaffList(MockDB.getStaff());
-    setAllActivities(MockDB.getActivities());
+    fetchData();
   }, []);
 
   const handleEditClick = (staff: Staff) => {
     setCurrentStaff(staff);
-    // Determine which activities this staff is assigned to
     const assignedIds = allActivities
-      .filter(a => a.assignedStaffIds.includes(staff.id))
-      .map(a => a.id);
+      .filter(a => a.assignedStaffIds.includes(staff._id!))
+      .map(a => a._id!);
     setSelectedActivityIds(assignedIds);
     setIsEditing(true);
   };
@@ -46,57 +56,74 @@ const StaffPage: React.FC = () => {
     setIsEditing(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!currentStaff.name || !currentStaff.role) return;
 
-    const staffId = currentStaff.id || `staff_${Date.now()}`;
+    try {
+      let staffId = currentStaff._id;
 
-    const newStaff: Staff = {
-      id: staffId,
-      name: currentStaff.name,
-      role: currentStaff.role,
-      schedule: currentStaff.schedule || DEFAULT_SCHEDULE
-    };
-
-    MockDB.saveStaff(newStaff);
-
-    // Update Activities relationships
-    allActivities.forEach(act => {
-      const isSelected = selectedActivityIds.includes(act.id);
-      const currentAssigned = act.assignedStaffIds || [];
-      let newAssigned = [...currentAssigned];
-
-      if (isSelected && !currentAssigned.includes(staffId)) {
-        newAssigned.push(staffId);
-      } else if (!isSelected && currentAssigned.includes(staffId)) {
-        newAssigned = newAssigned.filter(id => id !== staffId);
+      if (staffId) {
+        // Update existing staff
+        await fetch(`http://localhost:5000/api/staff/${staffId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(currentStaff),
+        });
+      } else {
+        // Create new staff
+        const res = await fetch('http://localhost:5000/api/staff', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(currentStaff),
+        });
+        const data = await res.json();
+        staffId = data._id;
       }
 
-      if (newAssigned.length !== currentAssigned.length) {
-        MockDB.saveActivity({ ...act, assignedStaffIds: newAssigned });
-      }
-    });
+      // Update Activities assignments
+      await Promise.all(
+        allActivities.map(async act => {
+          const isSelected = selectedActivityIds.includes(act._id!);
+          const currentAssigned = act.assignedStaffIds || [];
+          let newAssigned = [...currentAssigned];
 
-    // Refresh Data
-    setStaffList(MockDB.getStaff());
-    setAllActivities(MockDB.getActivities());
-    setIsEditing(false);
-    setCurrentStaff({});
+          if (isSelected && !currentAssigned.includes(staffId!)) newAssigned.push(staffId!);
+          if (!isSelected && currentAssigned.includes(staffId!))
+            newAssigned = newAssigned.filter(id => id !== staffId!);
+
+          if (newAssigned.length !== currentAssigned.length) {
+            await fetch(`http://localhost:5000/api/activities/${act._id}`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ assignedStaffIds: newAssigned }),
+            });
+          }
+        })
+      );
+
+      fetchData();
+      setIsEditing(false);
+      setCurrentStaff({});
+    } catch (err) {
+      console.error(err);
+      alert('Error saving staff.');
+    }
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm('Delete this staff member? This will not remove past bookings but may affect future scheduling.')) {
-      MockDB.deleteStaff(id);
-      setStaffList(MockDB.getStaff());
-      // Optionally cleanup activity references here, but simplified for now
+  const handleDelete = async (id: string) => {
+    if (!confirm('Delete this staff member?')) return;
+    try {
+      await fetch(`http://localhost:5000/api/staff/${id}`, { method: 'DELETE' });
+      fetchData();
+    } catch (err) {
+      console.error(err);
+      alert('Error deleting staff.');
     }
   };
 
   const toggleActivitySelection = (activityId: string) => {
-    setSelectedActivityIds(prev => 
-      prev.includes(activityId) 
-        ? prev.filter(id => id !== activityId) 
-        : [...prev, activityId]
+    setSelectedActivityIds(prev =>
+      prev.includes(activityId) ? prev.filter(id => id !== activityId) : [...prev, activityId]
     );
   };
 
@@ -108,12 +135,11 @@ const StaffPage: React.FC = () => {
         ...prev,
         [day]: {
           ...prev[day],
-          [field]: value
-        }
-      }
+          [field]: value,
+        },
+      },
     });
   };
-
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
