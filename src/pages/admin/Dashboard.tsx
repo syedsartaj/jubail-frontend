@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { MockDB } from '../../services/storage';
 import { Booking, Staff, BookingType, User } from '../../types';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import * as XLSX from 'xlsx/xlsx.mjs';
 import { DollarSign, Users, Ticket, Activity, Download, Filter } from 'lucide-react';
 import { ApiService } from '../../services/api';
 
@@ -135,12 +134,19 @@ useEffect(() => {
     return data.slice(start, start + ROWS_PER_PAGE);
   };
 
-  const exportToExcel = (data: any[], fileName: string) => {
-    const worksheet = XLSX.utils.json_to_sheet(data);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
-    XLSX.writeFile(workbook, `${fileName}_${new Date().toISOString().split('T')[0]}.xlsx`);
-  };
+const exportToExcel = async (data: any[], fileName: string) => {
+  const XLSX = await import('xlsx');   // ✅ dynamic browser-safe import
+
+  const worksheet = XLSX.utils.json_to_sheet(data);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
+
+  XLSX.writeFile(
+    workbook,
+    `${fileName}_${new Date().toISOString().split('T')[0]}.xlsx`
+  );
+};
+
 
   // --- DERIVED CUSTOMER DATA ---
   // Group bookings by email to create a customer view
