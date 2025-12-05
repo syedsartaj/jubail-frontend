@@ -170,7 +170,10 @@ useEffect(() => {
   const StatCard = ({ icon, title, value, color }: StatCardProps) => (
     <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center space-x-4">
       <div className={`p-3 rounded-full ${color} bg-opacity-10 text-opacity-100`}>
-        {React.cloneElement(icon as React.ReactElement, { className: `w-6 h-6 ${color.replace('bg-', 'text-')}` })}
+{React.isValidElement(icon) &&
+  React.cloneElement(icon as React.ReactElement<{ className?: string }>, {
+    className: `w-6 h-6 ${color.replace('bg-', 'text-')}`,
+  })}
       </div>
       <div>
         <p className="text-sm text-gray-500 font-medium">{title}</p>
